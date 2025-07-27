@@ -46,6 +46,31 @@
             opacity: 0.9;
         }
 
+        .nav-links {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-links a {
+            color: #6c757d;
+            text-decoration: none;
+            margin-right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .nav-links a.active {
+            background: #ff6b6b;
+            color: white;
+        }
+
         .main-content {
             padding: 40px;
         }
@@ -156,6 +181,23 @@
             box-shadow: none;
         }
 
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffa500);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         .results {
             background: #f8f9fa;
             border-radius: 15px;
@@ -221,23 +263,6 @@
             box-shadow: 0 8px 16px rgba(0, 123, 255, 0.3);
         }
 
-        .progress {
-            width: 100%;
-            height: 6px;
-            background: #e9ecef;
-            border-radius: 3px;
-            overflow: hidden;
-            margin: 20px 0;
-            display: none;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #ffa500);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
         .error {
             background: #f8d7da;
             color: #721c24;
@@ -262,6 +287,11 @@
         <div class="header">
             <h1>🍲 海底捞数据处理系统</h1>
             <p>智能数据清洗与统计分析平台</p>
+        </div>
+
+        <div class="nav-links">
+            <a href="#" class="active">📊 数据处理系统</a>
+            <a href="./department.html">🏢 部门分类系统</a>
         </div>
 
         <div class="main-content">
@@ -312,7 +342,7 @@
         let uploadedData = null;
         let selectedFunction = null;
         let processedData = null;
-        let cleanedData = null; // 存储剔除测试人员后的数据
+        let cleanedData = null;
 
         // 测试工号集合
         const testIds = new Set([
@@ -377,13 +407,9 @@
         }
 
         function selectFunction(func) {
-            // 清除之前的选择
             document.querySelectorAll('.function-btn').forEach(btn => btn.classList.remove('active'));
-            
-            // 设置新选择
             selectedFunction = func;
             document.getElementById(func + 'Btn').classList.add('active');
-            
             updateProcessButton();
         }
 
@@ -400,7 +426,6 @@
 
             setTimeout(() => {
                 try {
-                    // 首先确保有清理后的数据
                     if (!cleanedData) {
                         cleanedData = removeTestUsersData(uploadedData);
                     }
@@ -423,9 +448,7 @@
             }, 500);
         }
 
-        // 提取剔除测试人员的逻辑为独立函数
         function removeTestUsersData(data) {
-            // 清理工号数据
             const cleanedData = data.map(row => {
                 if (row['提问人.工号']) {
                     const id = String(row['提问人.工号']).trim();
@@ -436,13 +459,11 @@
                 return row;
             });
 
-            // 剔除测试工号
             const filteredData = cleanedData.filter(row => {
                 const id = String(row['提问人.工号'] || '').trim();
                 return !testIds.has(id);
             });
 
-            // 剔除空白问题
             const finalData = filteredData.filter(row => {
                 return row['问题'] && String(row['问题']).trim() !== '';
             });
@@ -452,15 +473,10 @@
 
         function removeTestUsers() {
             const original = uploadedData.length;
-            
-            // 使用共用的清理函数
             const finalData = removeTestUsersData(uploadedData);
-            cleanedData = finalData; // 保存清理后的数据
+            cleanedData = finalData;
             processedData = finalData;
 
-            const removed = original - finalData.length;
-            
-            // 计算各步骤的移除数量
             const tempCleaned = uploadedData.map(row => {
                 if (row['提问人.工号']) {
                     const id = String(row['提问人.工号']).trim();
@@ -504,7 +520,6 @@
         }
 
         function normalSummary() {
-            // 使用清理后的数据进行汇总
             const data = cleanedData;
             const summary = calculateSummary(data);
             
@@ -520,12 +535,10 @@
         }
 
         function conditionalSummary() {
-            // 基于清理后的数据进行条件筛选：去重、字数>6
             let filteredData = cleanedData.filter(row => {
                 return row['问题'] && String(row['问题']).trim().length > 6;
             });
 
-            // 按问题内容去重
             const uniqueQuestions = new Map();
             filteredData.forEach(row => {
                 const question = String(row['问题']).trim();
