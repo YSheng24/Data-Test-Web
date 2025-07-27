@@ -825,12 +825,22 @@
                 return;
             }
 
+            console.log('开始分类处理...');
+            console.log(`待分类数据: ${classifyData_global.length} 条`);
+            console.log(`匹配库数据: ${matchData.length} 条`);
+            console.log(`关键词字典: ${Object.keys(keywordsDict).length} 个部门`);
+
             showProgress(true);
             hideResults();
 
+            // 使用 setTimeout 确保UI更新
             setTimeout(() => {
                 try {
+                    const startTime = Date.now();
                     const results = simulateCompleteClassification(classifyData_global, trainedModel, matchData);
+                    const endTime = Date.now();
+                    console.log(`分类完成，耗时: ${(endTime - startTime) / 1000}秒`);
+                    
                     classifiedResults = results;
                     
                     const shortQuestions = results.filter(row => row['是否短问题']).length;
@@ -871,14 +881,21 @@
                     showDownloadButton();
                     showMessage('✅ 三路加权融合模型完成', 'success');
                 } catch (error) {
+                    console.error('分类错误:', error);
                     showMessage('分类处理失败: ' + error.message, 'error');
                 }
                 showProgress(false);
-            }, 3000);
+            }, 100);
         }
 
         function simulateCompleteClassification(data, model, matchData) {
-            return data.map(row => {
+            console.log(`开始分类 ${data.length} 条数据...`);
+            
+            const results = data.map((row, index) => {
+                if (index % 100 === 0) {
+                    console.log(`处理进度: ${index}/${data.length}`);
+                }
+                
                 const question = row['问题'] || '';
                 const isShort = question.length <= 6;
                 
@@ -899,44 +916,51 @@
                     // 1. TF-IDF分类
                     const departments = model.departments;
                     let hashCode = 0;
-                    for (let i = 0; i < question.length; i++) {
+                    for (let i = 0; i < Math.min(question.length, 20); i++) {
                         hashCode = ((hashCode << 5) - hashCode + question.charCodeAt(i)) | 0;
                     }
                     const deptIndex = Math.abs(hashCode) % departments.length;
                     tfidfDept = departments[deptIndex];
                     
-                    tfidfConfidence = 0.5 + (question.length / 100) * 0.3 + (Math.abs(hashCode % 100) / 100) * 0.2;
+                    tfidfConfidence = 0.5 + (Math.min(question.length, 50) / 100) * 0.3 + (Math.abs(hashCode % 100) / 100) * 0.2;
                     tfidfConfidence = Math.min(0.95, Math.max(0.4, tfidfConfidence));
                     
                     // 2. 关键词匹配
                     for (const [dept, keywords] of Object.entries(keywordsDict)) {
-                        if (keywords.some(kw => question.includes(kw))) {
+                        if (keywords && keywords.some(kw => question.includes(kw))) {
                             keywordDept = dept;
                             keywordHit = true;
                             break;
                         }
                     }
                     
-                    // 3. 语义向量匹配
+                    // 3. 语义向量匹配 - 优化版本
+                    // 只对前10个匹配库数据进行简单匹配（避免性能问题）
+                    const sampleSize = Math.min(10, matchData.length);
                     let maxSimilarity = 0;
-                    let bestMatchDept = semanticDept;
+                    let bestMatchDept = departments[0] || '运营部';
                     
-                    matchData.forEach(item => {
-                        if (item['问题'] && item['对应部门']) {
-                            const refQuestion = item['问题'].toString();
-                            let similarity = 0;
+                    for (let i = 0; i < sampleSize; i++) {
+                        const item = matchData[i];
+                        if (item && item['问题'] && item['对应部门']) {
+                            // 简单的关键词重叠度计算
+                            const refQuestion = (item['问题'] || '').toString();
+                            const words1 = question.split('').slice(0, 10);
+                            const words2 = refQuestion.split('').slice(0, 10);
+                            let commonCount = 0;
                             
-                            const chars1 = new Set(question.split(''));
-                            const chars2 = new Set(refQuestion.split(''));
-                            const common = [...chars1].filter(c => chars2.has(c)).length;
-                            similarity = common / Math.max(chars1.size, chars2.size);
+                            for (const w1 of words1) {
+                                if (words2.includes(w1)) commonCount++;
+                            }
+                            
+                            const similarity = commonCount / Math.max(words1.length, words2.length, 1);
                             
                             if (similarity > maxSimilarity) {
                                 maxSimilarity = similarity;
                                 bestMatchDept = item['对应部门'];
                             }
                         }
-                    });
+                    }
                     
                     semanticDept = bestMatchDept;
                     semanticConfidence = 0.5 + maxSimilarity * 0.4;
@@ -949,15 +973,22 @@
                         scores[keywordDept] = (scores[keywordDept] || 0) + weights.keyword;
                     }
                     
-                    const finalDept = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                    let finalDept = tfidfDept;
+                    let maxScore = 0;
+                    for (const [dept, score] of Object.entries(scores)) {
+                        if (score > maxScore) {
+                            maxScore = score;
+                            finalDept = dept;
+                        }
+                    }
                     
                     // 5. 人工复核判断
                     const uniqueDepts = new Set([tfidfDept, semanticDept, keywordDept].filter(d => d && d !== 'null'));
                     const scoreValues = Object.values(scores).sort((a, b) => b - a);
-                    const maxScore = scoreValues[0] || 0;
+                    const topScore = scoreValues[0] || 0;
                     const secondScore = scoreValues[1] || 0;
                     
-                    needReview = uniqueDepts.size > 1 && scoreValues.length >= 2 && Math.abs(maxScore - secondScore) < 0.1;
+                    needReview = uniqueDepts.size > 1 && scoreValues.length >= 2 && Math.abs(topScore - secondScore) < 0.1;
                     
                     if (needReview && question.length > 20) {
                         needReview = Math.abs(hashCode % 100) < 15;
@@ -1006,6 +1037,9 @@
                     '关键词命中': keywordHit
                 };
             });
+            
+            console.log('分类完成！');
+            return results;
         }
 
         function generateClassificationSummary(results) {
