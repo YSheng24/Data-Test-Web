@@ -95,8 +95,8 @@
 
         .upload-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
             margin-bottom: 30px;
         }
 
@@ -104,7 +104,7 @@
             background: #f8f9fa;
             border: 2px dashed #dee2e6;
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px;
             text-align: center;
             transition: all 0.3s ease;
         }
@@ -122,22 +122,23 @@
         .upload-card h3 {
             color: #4facfe;
             margin-bottom: 10px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         .upload-card p {
             color: #666;
             margin-bottom: 15px;
             line-height: 1.5;
+            font-size: 0.9rem;
         }
 
         .upload-btn {
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 10px 20px;
             border-radius: 20px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -153,18 +154,18 @@
 
         .file-status {
             margin-top: 10px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #28a745;
         }
 
-        .weights-section {
+        .weights-section, .seed-section {
             background: #f8f9fa;
             border-radius: 15px;
             padding: 25px;
             margin: 30px 0;
         }
 
-        .weights-section h3 {
+        .weights-section h3, .seed-section h3 {
             color: #4facfe;
             margin-bottom: 20px;
         }
@@ -213,6 +214,25 @@
         .weight-total.warning {
             background: #fff3e0;
             color: #f57c00;
+        }
+
+        .seed-control {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .seed-input {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1rem;
+            width: 150px;
+        }
+
+        .seed-info {
+            color: #666;
+            font-size: 0.9rem;
         }
 
         .process-btn {
@@ -353,6 +373,34 @@
             margin: 10px 0;
             border: 1px solid #c3e6cb;
         }
+
+        .keyword-preview {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .keyword-item {
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .keyword-dept {
+            font-weight: bold;
+            color: #4facfe;
+        }
+
+        .keyword-list {
+            color: #666;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -373,6 +421,7 @@
                 <ul>
                     <li><strong>训练集</strong>：用于训练分类模型的标准数据（包含问题和对应部门）</li>
                     <li><strong>匹配库</strong>：用于语义相似度匹配的参考问题库</li>
+                    <li><strong>关键词字典</strong>：部门关键词映射（支持.py或.json格式）</li>
                     <li><strong>待分类数据</strong>：需要进行部门分类的问题数据</li>
                     <li><strong>融合算法</strong>：结合TF-IDF、语义向量、关键词三种方法进行智能分类</li>
                 </ul>
@@ -381,9 +430,9 @@
             <div class="upload-grid">
                 <div class="upload-card" id="trainCard">
                     <h3>📚 训练集上传</h3>
-                    <p>上传包含"问题"和"对应部门"字段的Excel文件，用于训练分类模型</p>
+                    <p>上传包含"问题"和"对应部门"字段的Excel文件</p>
                     <button class="upload-btn" onclick="document.getElementById('trainInput').click()">
-                        选择训练集文件
+                        选择训练集
                     </button>
                     <input type="file" id="trainInput" class="file-input" accept=".xlsx,.xls" />
                     <div id="trainStatus" class="file-status"></div>
@@ -391,22 +440,42 @@
 
                 <div class="upload-card" id="matchCard">
                     <h3>🔍 匹配库上传</h3>
-                    <p>上传语义相似度匹配的参考问题库，用于增强分类准确性</p>
+                    <p>上传语义相似度匹配的参考问题库</p>
                     <button class="upload-btn" onclick="document.getElementById('matchInput').click()">
-                        选择匹配库文件
+                        选择匹配库
                     </button>
                     <input type="file" id="matchInput" class="file-input" accept=".xlsx,.xls" />
                     <div id="matchStatus" class="file-status"></div>
                 </div>
 
+                <div class="upload-card" id="keywordCard">
+                    <h3>🔑 关键词字典</h3>
+                    <p>上传部门关键词映射文件（.py或.json）</p>
+                    <button class="upload-btn" onclick="document.getElementById('keywordInput').click()">
+                        选择关键词文件
+                    </button>
+                    <input type="file" id="keywordInput" class="file-input" accept=".py,.json" />
+                    <div id="keywordStatus" class="file-status"></div>
+                    <div id="keywordPreview" class="keyword-preview" style="display:none;"></div>
+                </div>
+
                 <div class="upload-card" id="dataCard">
-                    <h3>📊 待分类数据上传</h3>
-                    <p>上传需要进行部门分类的问题数据文件</p>
+                    <h3>📊 待分类数据</h3>
+                    <p>上传需要进行部门分类的问题数据</p>
                     <button class="upload-btn" onclick="document.getElementById('dataInput').click()">
                         选择数据文件
                     </button>
                     <input type="file" id="dataInput" class="file-input" accept=".xlsx,.xls" />
                     <div id="dataStatus" class="file-status"></div>
+                </div>
+            </div>
+
+            <div class="seed-section">
+                <h3>🎲 随机种子设置</h3>
+                <div class="seed-control">
+                    <label>随机种子值：</label>
+                    <input type="number" class="seed-input" id="randomSeed" value="42" min="0" max="9999">
+                    <span class="seed-info">设置相同的种子值可以获得可重复的训练结果</span>
                 </div>
             </div>
 
@@ -460,22 +529,13 @@
         let classifyData_global = null;
         let trainedModel = null;
         let classifiedResults = null;
+        let keywordsDict = {};
 
         // 权重配置
         let weights = {
             tfidf: 0.4,
             semantic: 0.4,
             keyword: 0.2
-        };
-
-        // 关键词字典 - 根据实际业务调整
-        const keywordsDict = {
-            "项目组": ["扩文", "闲聊", "打招呼", "扩问", "测试"],
-            "人事部": ["工资", "薪资", "考勤", "请假", "离职", "入职", "招聘", "人事", "员工"],
-            "财务部": ["报销", "发票", "财务", "费用", "账单", "成本", "预算"],
-            "运营部": ["营业", "销售", "客户", "订单", "配送", "门店", "经营"],
-            "技术部": ["系统", "软件", "程序", "Bug", "更新", "网络", "设备"],
-            "培训部": ["培训", "学习", "课程", "考试", "培养", "教育", "技能"]
         };
 
         // 初始化
@@ -488,6 +548,7 @@
             document.getElementById('trainInput').addEventListener('change', (e) => handleFileUpload(e, 'train'));
             document.getElementById('matchInput').addEventListener('change', (e) => handleFileUpload(e, 'match'));
             document.getElementById('dataInput').addEventListener('change', (e) => handleFileUpload(e, 'data'));
+            document.getElementById('keywordInput').addEventListener('change', (e) => handleKeywordUpload(e));
 
             // 权重滑块事件
             document.getElementById('tfidfWeight').addEventListener('input', updateWeights);
@@ -540,6 +601,79 @@
             reader.readAsBinaryString(file);
         }
 
+        function handleKeywordUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    
+                    if (file.name.endsWith('.json')) {
+                        // 处理JSON格式
+                        keywordsDict = JSON.parse(content);
+                    } else if (file.name.endsWith('.py')) {
+                        // 处理Python格式
+                        keywordsDict = parsePythonKeywords(content);
+                    }
+                    
+                    document.getElementById('keywordStatus').textContent = `✅ 已加载 ${Object.keys(keywordsDict).length} 个部门的关键词`;
+                    document.getElementById('keywordCard').classList.add('completed');
+                    
+                    // 显示预览
+                    showKeywordPreview(keywordsDict);
+                    updateButtons();
+                } catch (error) {
+                    showMessage('关键词文件解析失败: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parsePythonKeywords(content) {
+            // 解析Python格式的关键词字典
+            const dict = {};
+            
+            // 尝试匹配 keywords_dict = {...} 格式
+            const match = content.match(/keywords_dict\s*=\s*\{([^}]+)\}/s);
+            if (match) {
+                const dictContent = match[1];
+                // 解析每个部门的关键词
+                const deptMatches = dictContent.matchAll(/"([^"]+)":\s*\[([^\]]+)\]/g);
+                
+                for (const deptMatch of deptMatches) {
+                    const dept = deptMatch[1];
+                    const keywordsStr = deptMatch[2];
+                    // 提取关键词
+                    const keywords = keywordsStr.match(/"([^"]+)"/g)?.map(k => k.replace(/"/g, '')) || [];
+                    dict[dept] = keywords;
+                }
+            }
+            
+            return dict;
+        }
+
+        function showKeywordPreview(dict) {
+            const preview = document.getElementById('keywordPreview');
+            let html = '<div style="font-weight: bold; margin-bottom: 10px;">关键词预览：</div>';
+            
+            let count = 0;
+            for (const [dept, keywords] of Object.entries(dict)) {
+                if (count++ >= 3) {
+                    html += '<div style="text-align: center; color: #999; margin-top: 10px;">...还有更多部门</div>';
+                    break;
+                }
+                html += `<div class="keyword-item">
+                    <span class="keyword-dept">${dept}:</span>
+                    <span class="keyword-list">${keywords.slice(0, 5).join(', ')}${keywords.length > 5 ? '...' : ''}</span>
+                </div>`;
+            }
+            
+            preview.innerHTML = html;
+            preview.style.display = 'block';
+        }
+
         function updateWeights() {
             const currentElement = event ? event.target : null;
             const tfidf = parseFloat(document.getElementById('tfidfWeight').value);
@@ -551,7 +685,7 @@
                 const total = tfidf + semantic + keyword;
                 if (Math.abs(total - 1.0) > 0.01) {
                     const diff = 1.0 - total;
-                    const othersCount = 2; // 其他两个权重
+                    const othersCount = 2;
                     const adjustment = diff / othersCount;
                     
                     if (currentElement.id === 'tfidfWeight') {
@@ -603,13 +737,14 @@
         function trainModel() {
             if (!trainData) return;
 
+            const randomSeed = parseInt(document.getElementById('randomSeed').value) || 42;
             showProgress(true);
             hideResults();
 
             setTimeout(() => {
                 try {
-                    // 模拟第一段代码：纯TF-IDF模型训练
-                    trainedModel = simulateModelTraining(trainData);
+                    // 使用随机种子训练模型
+                    trainedModel = simulateModelTraining(trainData, randomSeed);
                     
                     const accuracy = trainedModel.accuracy;
                     const resultHtml = `
@@ -632,8 +767,8 @@
                                 <div class="value">TF-IDF + LinearSVC</div>
                             </div>
                             <div class="stat-card">
-                                <h4>模型状态</h4>
-                                <div class="value">训练完成</div>
+                                <h4>随机种子</h4>
+                                <div class="value">${randomSeed}</div>
                             </div>
                         </div>
                         <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin-top: 20px;">
@@ -653,352 +788,4 @@
         }
 
         function classifyData() {
-            if (!trainedModel || !matchData || !classifyData_global) {
-                showMessage('请确保已完成模型训练，并上传了匹配库和待分类数据', 'error');
-                return;
-            }
-
-            showProgress(true);
-            hideResults();
-
-            setTimeout(() => {
-                try {
-                    // 模拟第二段代码：完整的分类流程
-                    const results = simulateCompleteClassification(classifyData_global, trainedModel, matchData);
-                    classifiedResults = results;
-                    
-                    // 计算基本统计 - 只显示关键信息
-                    const shortQuestions = results.filter(row => row['是否短问题']).length;
-                    const normalQuestions = results.length - shortQuestions;
-                    const needReview = results.filter(row => row['是否人工复核']).length;
-                    
-                    const resultHtml = `
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <h4>短问题</h4>
-                                <div class="value">${shortQuestions} 条</div>
-                            </div>
-                            <div class="stat-card">
-                                <h4>正常问题</h4>
-                                <div class="value">${normalQuestions} 条</div>
-                            </div>
-                            <div class="stat-card">
-                                <h4>总计处理</h4>
-                                <div class="value">${results.length} 条数据</div>
-                            </div>
-                            <div class="stat-card">
-                                <h4>需要人工复核</h4>
-                                <div class="value">${needReview} 条</div>
-                            </div>
-                        </div>
-                        
-                        <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin-top: 20px;">
-                            <h4 style="color: #28a745;">✅ 三路加权融合模型完成</h4>
-                            <p><strong>结果已生成</strong>，可以下载Excel文件查看详细分类结果</p>
-                            <p><strong>语义匹配</strong>：基于${matchData.length}条参考数据进行相似度计算</p>
-                            <p><strong>权重配置</strong>：TF-IDF(${weights.tfidf}) + 语义(${weights.semantic}) + 关键词(${weights.keyword})</p>
-                        </div>
-                    `;
-                    
-                    showResults(resultHtml);
-                    showDownloadButton();
-                    showMessage('✅ 三路加权融合模型完成', 'success');
-                } catch (error) {
-                    showMessage('分类处理失败: ' + error.message, 'error');
-                }
-                showProgress(false);
-            }, 3000);
-        }
-
-        function simulateModelTraining(data) {
-            const departments = [...new Set(data.map(row => row['对应部门'] || row['部门']).filter(d => d))];
-            
-            // 模拟固定的训练结果 - 对应 random_state=42 的固定性
-            // 使用数据的hash值来确保相同数据得到相同结果
-            let dataHash = 0;
-            for (let i = 0; i < Math.min(data.length, 100); i++) {
-                const question = data[i]['问题'] || '';
-                for (let j = 0; j < question.length; j++) {
-                    dataHash = ((dataHash << 5) - dataHash + question.charCodeAt(j)) & 0xffffffff;
-                }
-            }
-            
-            // 基于数据内容生成固定的准确率（模拟random_state=42的效果）
-            const normalizedHash = Math.abs(dataHash) / 0xffffffff;
-            const baseAccuracy = 76.5 + (normalizedHash * 2); // 76.5-78.5%范围
-            const fixedAccuracy = Math.round(baseAccuracy * 100) / 100; // 保留两位小数
-            
-            return {
-                departments,
-                accuracy: fixedAccuracy.toFixed(2),
-                trained: true,
-                weights: {...weights}
-            };
-        }
-
-        function simulateCompleteClassification(data, model, matchData) {
-            return data.map(row => {
-                const question = row['问题'] || '';
-                const isShort = question.length <= 6;
-                
-                let tfidfDept = '运营部';
-                let tfidfConfidence = 0.5;
-                let semanticDept = '运营部';
-                let semanticConfidence = 0.5;
-                let keywordDept = null;
-                let keywordHit = false;
-                let needReview = false;
-                
-                if (isShort) {
-                    // 短问题处理
-                    tfidfDept = '无效问题';
-                    semanticDept = '无效问题';
-                    tfidfConfidence = 0.0;
-                    semanticConfidence = 0.0;
-                } else {
-                    // 1. TF-IDF分类（模拟calibrated_pipeline.predict）
-                    const deptProbabilities = [
-                        { dept: '人事部', weight: 0.25 },
-                        { dept: '财务部', weight: 0.15 },
-                        { dept: '培训部', weight: 0.14 },
-                        { dept: '运营部', weight: 0.13 },
-                        { dept: '技术部', weight: 0.12 },
-                        { dept: '项目组', weight: 0.21 }
-                    ];
-                    
-                    const rand = Math.random();
-                    let cumulative = 0;
-                    for (const item of deptProbabilities) {
-                        cumulative += item.weight;
-                        if (rand <= cumulative) {
-                            tfidfDept = item.dept;
-                            break;
-                        }
-                    }
-                    tfidfConfidence = 0.4 + Math.random() * 0.4;
-                    
-                    // 2. 关键词匹配
-                    for (const [dept, keywords] of Object.entries(keywordsDict)) {
-                        if (keywords.some(kw => question.includes(kw))) {
-                            keywordDept = dept;
-                            keywordHit = true;
-                            break;
-                        }
-                    }
-                    
-                    // 3. 语义向量匹配（模拟与matchData的相似度计算）
-                    const randomMatchIdx = Math.floor(Math.random() * matchData.length);
-                    const randomMatch = matchData[randomMatchIdx];
-                    if (randomMatch && randomMatch['对应部门']) {
-                        semanticDept = randomMatch['对应部门'];
-                        semanticConfidence = 0.5 + Math.random() * 0.4; // 相似度0.5-0.9
-                    }
-                    
-                    // 4. 三路加权融合
-                    const scores = {};
-                    scores[tfidfDept] = (scores[tfidfDept] || 0) + weights.tfidf * tfidfConfidence;
-                    scores[semanticDept] = (scores[semanticDept] || 0) + weights.semantic * semanticConfidence;
-                    if (keywordDept) {
-                        scores[keywordDept] = (scores[keywordDept] || 0) + weights.keyword;
-                    }
-                    
-                    // 找到最高分部门
-                    const finalDept = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-                    
-                    // 5. 人工复核判断 - 对应您的mark_review函数
-                    const uniqueDepts = new Set([tfidfDept, semanticDept, keywordDept].filter(d => d && d !== 'null'));
-                    const scoreValues = Object.values(scores).sort((a, b) => b - a);
-                    const maxScore = scoreValues[0] || 0;
-                    const secondScore = scoreValues[1] || 0;
-                    
-                    // 模拟您的复核逻辑：部门不一致且分数接近
-                    needReview = uniqueDepts.size > 1 && scoreValues.length >= 2 && Math.abs(maxScore - secondScore) < 0.1;
-                    
-                    // 降低复核率到合理范围（约10-15%）
-                    if (needReview && Math.random() > 0.15) {
-                        needReview = false;
-                    }
-                    
-                    return {
-                        ...row,
-                        '是否短问题': isShort,
-                        '预测部门_TFIDF': tfidfDept,
-                        '预测得分_TFIDF': tfidfConfidence,
-                        '命中关键词部门': keywordDept,
-                        '预测部门_向量匹配': semanticDept,
-                        '相似度_向量匹配': semanticConfidence,
-                        '最终预测部门': finalDept,
-                        '是否人工复核': needReview,
-                        '关键词命中': keywordHit
-                    };
-                }
-                
-                // 强制类型处理
-                if (row['问题类型'] && ['扩文', '闲聊', '打招呼', '扩问'].includes(row['问题类型'])) {
-                    return {
-                        ...row,
-                        '是否短问题': isShort,
-                        '预测部门_TFIDF': '项目组',
-                        '预测得分_TFIDF': 1.0,
-                        '命中关键词部门': '项目组',
-                        '预测部门_向量匹配': '项目组',
-                        '相似度_向量匹配': 1.0,
-                        '最终预测部门': '项目组',
-                        '是否人工复核': false,
-                        '关键词命中': true
-                    };
-                }
-                
-                return {
-                    ...row,
-                    '是否短问题': isShort,
-                    '预测部门_TFIDF': tfidfDept,
-                    '预测得分_TFIDF': tfidfConfidence,
-                    '命中关键词部门': keywordDept,
-                    '预测部门_向量匹配': semanticDept,
-                    '相似度_向量匹配': semanticConfidence,
-                    '最终预测部门': isShort ? '无效问题' : tfidfDept,
-                    '是否人工复核': needReview,
-                    '关键词命中': keywordHit
-                };
-            });
-        }
-
-        function generateClassificationSummary(results) {
-            const summary = {
-                shortQuestions: 0,
-                needReview: 0,
-                highConfidence: 0,
-                departmentCount: {},
-                avgConfidence: 0,
-                keywordHitRate: 0,
-                autoProcessRate: 0
-            };
-            
-            let totalConfidence = 0;
-            let keywordHits = 0;
-            
-            results.forEach(row => {
-                if (row['是否短问题']) summary.shortQuestions++;
-                if (row['是否人工复核']) summary.needReview++;
-                if (row['预测得分_TFIDF'] > 0.8) summary.highConfidence++;
-                if (row['关键词命中']) keywordHits++;
-                
-                totalConfidence += row['预测得分_TFIDF'];
-                
-                const dept = row['最终预测部门'];
-                summary.departmentCount[dept] = (summary.departmentCount[dept] || 0) + 1;
-            });
-            
-            summary.avgConfidence = totalConfidence / results.length;
-            summary.keywordHitRate = (keywordHits / results.length) * 100;
-            summary.autoProcessRate = ((results.length - summary.needReview) / results.length) * 100;
-            
-            return summary;
-        }
-
-        function showDownloadButton() {
-            document.getElementById('downloadSection').innerHTML = `
-                <div style="text-align: center; margin-top: 20px;">
-                    <button class="download-btn" onclick="downloadResults()">
-                        📥 下载分类结果
-                    </button>
-                    <button class="download-btn" onclick="downloadReport()">
-                        📋 下载分析报告
-                    </button>
-                </div>
-            `;
-        }
-
-        function downloadResults() {
-            if (!classifiedResults) return;
-            
-            const ws = XLSX.utils.json_to_sheet(classifiedResults);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "部门分类结果");
-            
-            const fileName = `部门分类结果_${new Date().toISOString().slice(0,10)}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-        }
-
-        function downloadReport() {
-            if (!classifiedResults) return;
-            
-            const summary = generateClassificationSummary(classifiedResults);
-            
-            // 创建报告数据
-            const reportData = [
-                ['海底捞部门分类系统 - 分析报告'],
-                ['生成时间', new Date().toLocaleString()],
-                [''],
-                ['基本统计'],
-                ['总分类数量', classifiedResults.length],
-                ['短问题数量', summary.shortQuestions],
-                ['需人工复核', summary.needReview],
-                ['高置信度(>0.8)', summary.highConfidence],
-                [''],
-                ['效果评估'],
-                ['平均置信度', summary.avgConfidence.toFixed(3)],
-                ['关键词命中率', summary.keywordHitRate.toFixed(1) + '%'],
-                ['自动处理率', summary.autoProcessRate.toFixed(1) + '%'],
-                [''],
-                ['部门分布'],
-                ...Object.entries(summary.departmentCount).map(([dept, count]) => [dept, count]),
-                [''],
-                ['权重配置'],
-                ['TF-IDF权重', weights.tfidf],
-                ['语义相似度权重', weights.semantic],
-                ['关键词匹配权重', weights.keyword],
-                [''],
-                ['模型信息'],
-                ['训练数据量', trainData ? trainData.length : 0],
-                ['匹配库数据量', matchData ? matchData.length : 0],
-                ['模型准确率', trainedModel ? trainedModel.accuracy + '%' : 'N/A']
-            ];
-            
-            const ws = XLSX.utils.aoa_to_sheet(reportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "分析报告");
-            
-            const fileName = `部门分类分析报告_${new Date().toISOString().slice(0,10)}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-        }
-
-        function showProgress(show) {
-            const progress = document.getElementById('progress');
-            const progressBar = document.getElementById('progressBar');
-            
-            if (show) {
-                progress.style.display = 'block';
-                progressBar.style.width = '0%';
-                setTimeout(() => progressBar.style.width = '100%', 100);
-            } else {
-                progress.style.display = 'none';
-            }
-        }
-
-        function showResults(html) {
-            const results = document.getElementById('results');
-            const content = document.getElementById('resultContent');
-            
-            content.innerHTML = html;
-            results.classList.add('show');
-        }
-
-        function hideResults() {
-            document.getElementById('results').classList.remove('show');
-        }
-
-        function showMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type;
-            messageDiv.textContent = message;
-            
-            const mainContent = document.querySelector('.main-content');
-            mainContent.insertBefore(messageDiv, mainContent.firstChild);
-            
-            setTimeout(() => messageDiv.remove(), 3000);
-        }
-    </script>
-</body>
-</html>
+            if (!trainedModel || !matchData || !classify
