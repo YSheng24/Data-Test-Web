@@ -657,21 +657,86 @@
         function parsePythonKeywords(content) {
             const dict = {};
             
-            // 匹配 keywords_dict = {...} 格式
-            const match = content.match(/keywords_dict\s*=\s*\{([^}]+)\}/s);
-            if (match) {
-                const dictContent = match[1];
-                // 解析每个部门的关键词
-                const deptMatches = dictContent.matchAll(/"([^"]+)":\s*\[([^\]]+)\]/g);
+            // 更灵活的正则表达式来匹配Python字典
+            // 支持多种格式：keywords_dict = { ... } 或 keywords_dict = {
+            const dictMatch = content.match(/keywords_dict\s*=\s*\{([\s\S]*?)\n\}/m);
+            
+            if (dictMatch) {
+                const dictContent = dictMatch[1];
+                console.log('找到字典内容:', dictContent.substring(0, 200) + '...');
                 
-                for (const deptMatch of deptMatches) {
-                    const dept = deptMatch[1];
-                    const keywordsStr = deptMatch[2];
-                    const keywords = keywordsStr.match(/"([^"]+)"/g)?.map(k => k.replace(/"/g, '')) || [];
-                    dict[dept] = keywords;
+                // 匹配每个部门的关键词，支持单引号和双引号
+                const lines = dictContent.split('\n');
+                let currentDept = null;
+                let currentKeywords = [];
+                
+                lines.forEach(line => {
+                    // 匹配部门名称行：'部门名': ['关键词1', '关键词2', ...],
+                    const deptMatch = line.match(/['"]([^'"]+)['"]\s*:\s*\[/);
+                    if (deptMatch) {
+                        // 保存之前的部门数据
+                        if (currentDept) {
+                            dict[currentDept] = currentKeywords;
+                        }
+                        currentDept = deptMatch[1];
+                        currentKeywords = [];
+                        
+                        // 尝试在同一行提取关键词
+                        const keywordsMatch = line.match(/\[(.*?)\]/);
+                        if (keywordsMatch) {
+                            const keywordsStr = keywordsMatch[1];
+                            const keywords = keywordsStr.match(/['"]([^'"]+)['"]/g);
+                            if (keywords) {
+                                currentKeywords = keywords.map(k => k.replace(/['"]/g, ''));
+                                dict[currentDept] = currentKeywords;
+                                currentDept = null;
+                            }
+                        }
+                    } else if (currentDept && line.includes(']')) {
+                        // 处理跨行的关键词列表结束
+                        const keywordsInLine = line.match(/['"]([^'"]+)['"]/g);
+                        if (keywordsInLine) {
+                            currentKeywords.push(...keywordsInLine.map(k => k.replace(/['"]/g, '')));
+                        }
+                        dict[currentDept] = currentKeywords;
+                        currentDept = null;
+                        currentKeywords = [];
+                    } else if (currentDept) {
+                        // 处理跨行的关键词
+                        const keywordsInLine = line.match(/['"]([^'"]+)['"]/g);
+                        if (keywordsInLine) {
+                            currentKeywords.push(...keywordsInLine.map(k => k.replace(/['"]/g, '')));
+                        }
+                    }
+                });
+                
+                // 处理最后一个部门
+                if (currentDept && currentKeywords.length > 0) {
+                    dict[currentDept] = currentKeywords;
+                }
+            } else {
+                console.log('未找到 keywords_dict 定义');
+                // 尝试其他格式
+                const altMatch = content.match(/keywords_dict\s*=\s*\{([^}]+)\}/);
+                if (altMatch) {
+                    console.log('尝试备用解析方法...');
+                    const dictStr = altMatch[1];
+                    // 简单的逐行解析
+                    const pairs = dictStr.split(',').filter(p => p.includes(':'));
+                    pairs.forEach(pair => {
+                        const [deptPart, keywordsPart] = pair.split(':');
+                        if (deptPart && keywordsPart) {
+                            const dept = deptPart.match(/['"]([^'"]+)['"]/)?.[1];
+                            const keywordsMatches = keywordsPart.match(/['"]([^'"]+)['"]/g);
+                            if (dept && keywordsMatches) {
+                                dict[dept] = keywordsMatches.map(k => k.replace(/['"]/g, ''));
+                            }
+                        }
+                    });
                 }
             }
             
+            console.log('解析结果:', dict);
             return dict;
         }
 
@@ -982,24 +1047,39 @@
                         }
                     }
                     
-                    // 5. 人工复核判断
-                    const uniqueDepts = new Set([tfidfDept, semanticDept, keywordDept].filter(d => d && d !== 'null'));
-                    const scoreValues = Object.values(scores).sort((a, b) => b - a);
-                    const topScore = scoreValues[0] || 0;
-                    const secondScore = scoreValues[1] || 0;
-                    
-                    needReview = uniqueDepts.size > 1 && scoreValues.length >= 2 && Math.abs(topScore - secondScore) < 0.1;
-                    
-                    if (needReview && question.length > 20) {
-                        needReview = Math.abs(hashCode % 100) < 15;
+                    // 5. 人工复核判断 - 严格按照Python代码逻辑
+                    const depts = [tfidfDept, semanticDept];
+                    if (keywordDept && keywordDept !== 'nan' && keywordDept !== null) {
+                        depts.push(keywordDept);
                     }
+                    
+                    // 计算各部门得分
+                    const deptScores = {};
+                    deptScores[tfidfDept] = weights.tfidf * tfidfConfidence;
+                    deptScores[semanticDept] = weights.semantic * semanticConfidence;
+                    if (keywordDept && keywordDept !== 'nan' && keywordDept !== null) {
+                        deptScores[keywordDept] = (deptScores[keywordDept] || 0) + weights.keyword;
+                    }
+                    
+                    // 获取前两个最高分
+                    const sortedScores = Object.values(deptScores).sort((a, b) => b - a);
+                    const top1Score = sortedScores[0] || 0;
+                    const top2Score = sortedScores[1] || 0;
+                    
+                    // 获取唯一部门数
+                    const uniqueDepts = new Set(depts.filter(d => d && d !== 'nan' && d !== null));
+                    
+                    // 判断是否需要复核：部门不一致 且 前两个分数接近
+                    needReview = uniqueDepts.size > 1 && 
+                                sortedScores.length >= 2 && 
+                                Math.abs(top1Score - top2Score) < 0.1;
                     
                     return {
                         ...row,
                         '是否短问题': isShort,
                         '预测部门_TFIDF': tfidfDept,
                         '预测得分_TFIDF': parseFloat(tfidfConfidence.toFixed(3)),
-                        '命中关键词部门': keywordDept,
+                        '命中关键词部门': keywordDept || null,  // 保持null而不是undefined
                         '预测部门_向量匹配': semanticDept,
                         '相似度_向量匹配': parseFloat(semanticConfidence.toFixed(3)),
                         '最终预测部门': finalDept,
@@ -1029,10 +1109,10 @@
                     '是否短问题': isShort,
                     '预测部门_TFIDF': tfidfDept,
                     '预测得分_TFIDF': parseFloat(tfidfConfidence.toFixed(3)),
-                    '命中关键词部门': keywordDept,
+                    '命中关键词部门': keywordDept || null,  // 保持null而不是undefined
                     '预测部门_向量匹配': semanticDept,
                     '相似度_向量匹配': parseFloat(semanticConfidence.toFixed(3)),
-                    '最终预测部门': isShort ? '无效问题' : tfidfDept,
+                    '最终预测部门': isShort ? '无效问题' : finalDept,  // 修正：短问题才是无效问题
                     '是否人工复核': needReview,
                     '关键词命中': keywordHit
                 };
