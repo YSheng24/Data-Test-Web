@@ -1,6 +1,6 @@
 # 🍲 海底捞智能数据处理平台
 
-智能数据清洗、统计分析与AI部门分类一体化解决方案
+智能数据清洗、统计分析与AI部门分类一体化解决方案。请先下载训练集和匹配集数据，
 
 ## 🌐 在线访问
 - **📊 数据处理系统**：[https://ysheng24.github.io/Data-Test-Web/](https://ysheng24.github.io/Data-Test-Web/)
