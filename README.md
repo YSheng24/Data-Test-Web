@@ -2,7 +2,7 @@
 
 智能数据清洗、统计分析与AI部门分类一体化解决方案。请先下载训练集和匹配集数据，
 
-## 🌐 在线访问
+## 🌐 在线访问（点击下方其中一个链接就行）
 - **📊 数据处理系统**：[https://ysheng24.github.io/Data-Test-Web/](https://ysheng24.github.io/Data-Test-Web/)
 - **🏢 部门分类系统**：[https://ysheng24.github.io/Data-Test-Web/department.html](https://ysheng24.github.io/Data-Test-Web/department.html)
 
