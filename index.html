@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海底捞数据处理系统</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 3px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+        }
+
+        .upload-section.dragover {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+            transform: scale(1.02);
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .function-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .function-btn {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .function-btn:hover {
+            border-color: #ff6b6b;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .function-btn.active {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+        }
+
+        .function-btn h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .function-btn p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 30px auto;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results h3 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .stat-card h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 123, 255, 0.3);
+        }
+
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffa500);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍲 海底捞数据处理系统</h1>
+            <p>智能数据清洗与统计分析平台</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <h3>📁 上传Excel文件</h3>
+                <p>请选择或拖拽您的Excel文件到此处</p>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    选择文件
+                </button>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" />
+                <div id="fileName" style="margin-top: 15px; color: #666;"></div>
+            </div>
+
+            <div class="function-buttons">
+                <div class="function-btn" id="removeTestBtn" onclick="selectFunction('removeTest')">
+                    <h3>🧹 剔除测试人员</h3>
+                    <p>移除测试工号数据，清理原始数据集，为后续分析准备干净的数据源</p>
+                </div>
+
+                <div class="function-btn" id="normalSummaryBtn" onclick="selectFunction('normalSummary')">
+                    <h3>📊 普通数据汇总</h3>
+                    <p>基于剔除测试人员后的数据进行统计分析，包括问题总数、用户数量、反馈情况等</p>
+                </div>
+
+                <div class="function-btn" id="conditionalSummaryBtn" onclick="selectFunction('conditionalSummary')">
+                    <h3>🔍 条件数据汇总</h3>
+                    <p>在剔除测试人员的基础上，进一步进行问题去重和字数筛选（>6字），数据更精准</p>
+                </div>
+            </div>
+
+            <button class="process-btn" id="processBtn" onclick="processData()" disabled>
+                开始处理数据
+            </button>
+
+            <div class="progress" id="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="results" id="results">
+                <h3>📈 处理结果</h3>
+                <div id="resultContent"></div>
+                <div id="downloadButtons"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedData = null;
+        let selectedFunction = null;
+        let processedData = null;
+        let cleanedData = null; // 存储剔除测试人员后的数据
+
+        // 测试工号集合
+        const testIds = new Set([
+            "10212086", "10994593", "10094780", "10010025", "10054910",
+            "10136557", "10820307", "10749652", "11034557", "10410422",
+            "10404232", "10697874", "10136888", "10003400", "10036012",
+            "10003512", "10242911", "11767390", "10001398"
+        ]);
+
+        // 文件上传处理
+        document.getElementById('fileInput').addEventListener('change', handleFile);
+        
+        // 拖拽上传
+        const uploadSection = document.getElementById('uploadSection');
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFileUpload(file);
+            }
+        }
+
+        function handleFileUpload(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showMessage('请上传Excel文件（.xlsx或.xls格式）', 'error');
+                return;
+            }
+
+            document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const workbook = XLSX.read(e.target.result, {type: 'binary'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    uploadedData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    showMessage(`文件上传成功！共 ${uploadedData.length} 行数据`, 'success');
+                    updateProcessButton();
+                } catch (error) {
+                    showMessage('文件读取失败，请确保文件格式正确', 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function selectFunction(func) {
+            // 清除之前的选择
+            document.querySelectorAll('.function-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // 设置新选择
+            selectedFunction = func;
+            document.getElementById(func + 'Btn').classList.add('active');
+            
+            updateProcessButton();
+        }
+
+        function updateProcessButton() {
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = !(uploadedData && selectedFunction);
+        }
+
+        function processData() {
+            if (!uploadedData || !selectedFunction) return;
+
+            showProgress(true);
+            hideResults();
+
+            setTimeout(() => {
+                try {
+                    // 首先确保有清理后的数据
+                    if (!cleanedData) {
+                        cleanedData = removeTestUsersData(uploadedData);
+                    }
+
+                    switch(selectedFunction) {
+                        case 'removeTest':
+                            removeTestUsers();
+                            break;
+                        case 'normalSummary':
+                            normalSummary();
+                            break;
+                        case 'conditionalSummary':
+                            conditionalSummary();
+                            break;
+                    }
+                } catch (error) {
+                    showMessage('处理过程中出现错误: ' + error.message, 'error');
+                }
+                showProgress(false);
+            }, 500);
+        }
+
+        // 提取剔除测试人员的逻辑为独立函数
+        function removeTestUsersData(data) {
+            // 清理工号数据
+            const cleanedData = data.map(row => {
+                if (row['提问人.工号']) {
+                    const id = String(row['提问人.工号']).trim();
+                    if (/^\d+$/.test(id)) {
+                        row['提问人.工号'] = id;
+                    }
+                }
+                return row;
+            });
+
+            // 剔除测试工号
+            const filteredData = cleanedData.filter(row => {
+                const id = String(row['提问人.工号'] || '').trim();
+                return !testIds.has(id);
+            });
+
+            // 剔除空白问题
+            const finalData = filteredData.filter(row => {
+                return row['问题'] && String(row['问题']).trim() !== '';
+            });
+
+            return finalData;
+        }
+
+        function removeTestUsers() {
+            const original = uploadedData.length;
+            
+            // 使用共用的清理函数
+            const finalData = removeTestUsersData(uploadedData);
+            cleanedData = finalData; // 保存清理后的数据
+            processedData = finalData;
+
+            const removed = original - finalData.length;
+            
+            // 计算各步骤的移除数量
+            const tempCleaned = uploadedData.map(row => {
+                if (row['提问人.工号']) {
+                    const id = String(row['提问人.工号']).trim();
+                    if (/^\d+$/.test(id)) {
+                        row['提问人.工号'] = id;
+                    }
+                }
+                return row;
+            });
+            
+            const tempFiltered = tempCleaned.filter(row => {
+                const id = String(row['提问人.工号'] || '').trim();
+                return !testIds.has(id);
+            });
+            
+            const testRemoved = original - tempFiltered.length;
+            const blankRemoved = tempFiltered.length - finalData.length;
+
+            const resultHtml = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>原始数据量</h4>
+                        <div class="value">${original} 条</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>剔除测试工号</h4>
+                        <div class="value">${testRemoved} 条</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>剔除空白问题</h4>
+                        <div class="value">${blankRemoved} 条</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>最终数据量</h4>
+                        <div class="value">${finalData.length} 条</div>
+                    </div>
+                </div>
+            `;
+
+            showResults(resultHtml, true);
+        }
+
+        function normalSummary() {
+            // 使用清理后的数据进行汇总
+            const data = cleanedData;
+            const summary = calculateSummary(data);
+            
+            const resultHtml = `
+                <div class="stat-card" style="margin-bottom: 20px; background: #e8f5e8;">
+                    <h4>数据说明</h4>
+                    <p>基于剔除测试人员后的数据进行统计分析</p>
+                    <div class="value">${data.length} 条有效数据</div>
+                </div>
+                ${generateSummaryHtml(summary)}
+            `;
+            showResults(resultHtml, false);
+        }
+
+        function conditionalSummary() {
+            // 基于清理后的数据进行条件筛选：去重、字数>6
+            let filteredData = cleanedData.filter(row => {
+                return row['问题'] && String(row['问题']).trim().length > 6;
+            });
+
+            // 按问题内容去重
+            const uniqueQuestions = new Map();
+            filteredData.forEach(row => {
+                const question = String(row['问题']).trim();
+                if (!uniqueQuestions.has(question)) {
+                    uniqueQuestions.set(question, row);
+                }
+            });
+
+            filteredData = Array.from(uniqueQuestions.values());
+            processedData = filteredData;
+
+            const summary = calculateSummary(filteredData);
+            const resultHtml = `
+                <div class="stat-card" style="margin-bottom: 20px; background: #e3f2fd;">
+                    <h4>条件筛选说明</h4>
+                    <p>基于剔除测试人员后的数据，进行问题去重处理，且只保留字数大于6的问题</p>
+                    <div class="value">从 ${cleanedData.length} 条清理数据中筛选出 ${filteredData.length} 条有效数据</div>
+                </div>
+                ${generateSummaryHtml(summary)}
+            `;
+            showResults(resultHtml, true);
+        }
+
+        function calculateSummary(data) {
+            const total = data.length;
+            const uniqueUsers = new Set(data.map(row => row['提问人.工号'])).size;
+            
+            const managers = data.filter(row => row['店经理']).map(row => row['提问人.工号']);
+            const uniqueManagers = new Set(managers).size;
+            const uniqueNonManagers = new Set(data.filter(row => !row['店经理']).map(row => row['提问人.工号'])).size;
+
+            const systemType = data.filter(row => row['问题类型'] === '制度类');
+            const nonSystemType = data.filter(row => row['问题类型'] !== '制度类');
+
+            const feedback = data.filter(row => row['答案有无帮助']);
+            const helpful = data.filter(row => row['答案有无帮助'] === '有帮助');
+            const notHelpful = data.filter(row => row['答案有无帮助'] === '无帮助');
+
+            const noAnswerSystem = data.filter(row => row['问题类型'] === '制度类' && row['答案'] === '未匹配到答案');
+            const noAnswerNonSystem = data.filter(row => row['问题类型'] !== '制度类' && row['答案'] === '未匹配到答案');
+
+            return {
+                total,
+                uniqueUsers,
+                uniqueManagers,
+                uniqueNonManagers,
+                systemType: systemType.length,
+                nonSystemType: nonSystemType.length,
+                systemTypePercent: systemType.length / total * 100,
+                nonSystemTypePercent: nonSystemType.length / total * 100,
+                feedback: feedback.length,
+                feedbackPercent: feedback.length / total * 100,
+                helpful: helpful.length,
+                helpfulPercent: helpful.length / feedback.length * 100,
+                notHelpful: notHelpful.length,
+                notHelpfulPercent: notHelpful.length / feedback.length * 100,
+                noAnswerSystem: noAnswerSystem.length,
+                noAnswerSystemPercent: noAnswerSystem.length / systemType.length * 100,
+                noAnswerNonSystem: noAnswerNonSystem.length,
+                noAnswerNonSystemPercent: noAnswerNonSystem.length / nonSystemType.length * 100
+            };
+        }
+
+        function generateSummaryHtml(summary) {
+            return `
+                <h4>① 提问基本情况</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>总问题数</h4>
+                        <div class="value">${summary.total} 条</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>提问人总数</h4>
+                        <div class="value">${summary.uniqueUsers} 人</div>
+                    </div>
+                </div>
+
+                <h4>② 店经理相关统计</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>店经理人数</h4>
+                        <div class="value">${summary.uniqueManagers} 人</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>非店经理人数</h4>
+                        <div class="value">${summary.uniqueNonManagers} 人</div>
+                    </div>
+                </div>
+
+                <h4>③ 问题类型占比</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>制度类提问</h4>
+                        <div class="value">${summary.systemType} 条 (${summary.systemTypePercent.toFixed(2)}%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>非制度类提问</h4>
+                        <div class="value">${summary.nonSystemType} 条 (${summary.nonSystemTypePercent.toFixed(2)}%)</div>
+                    </div>
+                </div>
+
+                <h4>④ 用户反馈情况</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>反馈总数</h4>
+                        <div class="value">${summary.feedback} 条 (${summary.feedbackPercent.toFixed(2)}%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>有帮助</h4>
+                        <div class="value">${summary.helpful} 条 (${summary.helpfulPercent.toFixed(2)}%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>无帮助</h4>
+                        <div class="value">${summary.notHelpful} 条 (${summary.notHelpfulPercent.toFixed(2)}%)</div>
+                    </div>
+                </div>
+
+                <h4>⑤ 无答案情况</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>制度类无答案</h4>
+                        <div class="value">${summary.noAnswerSystem} 条 (${summary.noAnswerSystemPercent.toFixed(2)}%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>非制度类无答案</h4>
+                        <div class="value">${summary.noAnswerNonSystem} 条 (${summary.noAnswerNonSystemPercent.toFixed(2)}%)</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showResults(html, showDownload) {
+            const results = document.getElementById('results');
+            const content = document.getElementById('resultContent');
+            const downloadButtons = document.getElementById('downloadButtons');
+            
+            content.innerHTML = html;
+            
+            if (showDownload) {
+                downloadButtons.innerHTML = `
+                    <button class="download-btn" onclick="downloadExcel()">
+                        📥 下载Excel文件
+                    </button>
+                `;
+            } else {
+                downloadButtons.innerHTML = '';
+            }
+            
+            results.classList.add('show');
+        }
+
+        function hideResults() {
+            document.getElementById('results').classList.remove('show');
+        }
+
+        function downloadExcel() {
+            if (!processedData) return;
+
+            const ws = XLSX.utils.json_to_sheet(processedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "处理后数据");
+
+            const fileName = `处理后数据_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        }
+
+        function showProgress(show) {
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            
+            if (show) {
+                progress.style.display = 'block';
+                progressBar.style.width = '0%';
+                setTimeout(() => progressBar.style.width = '100%', 100);
+            } else {
+                progress.style.display = 'none';
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            const mainContent = document.querySelector('.main-content');
+            mainContent.insertBefore(messageDiv, mainContent.firstChild);
+            
+            setTimeout(() => messageDiv.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
