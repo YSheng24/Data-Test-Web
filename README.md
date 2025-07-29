@@ -8,7 +8,7 @@
 
 - 📊 **数据处理系统**：[https://ysheng24.github.io/Data-Test-Web/](https://ysheng24.github.io/Data-Test-Web/)
 - 🏢 **部门分类系统**：[https://ysheng24.github.io/Data-Test-Web/department.html](https://ysheng24.github.io/Data-Test-Web/department.html)  
-- 🔍 **问题分析器**：[https://ysheng24.github.io/Data-Test-Web/question-analyzer.html](https://ysheng24.github.io/Data-Test-Web/question-analyzer.html) ✨**新功能**
+- 🔍 **问题分析器**：[https://ysheng24.github.io/Data-Test-Web/question-analyzer.html](https://ysheng24.github.io/Data-Test-Web/question-analyzer.html) ✨（使用有效问题数据集）
 
 ## ✨ 系统功能
 
