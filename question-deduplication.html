@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能问题去重分析 - 海底捞智能数据处理平台</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        }
+        .container {
+            padding-top: 2rem;
+        }
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.95);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 1.5rem;
+        }
+        .feature-card {
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+        }
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .result-section {
+            display: none;
+            margin-top: 2rem;
+        }
+        .progress-container {
+            display: none;
+            margin: 2rem 0;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .navbar-brand, .nav-link {
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-fire me-2"></i>海底捞智能数据处理平台
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="index.html">
+                    <i class="fas fa-home me-1"></i>首页
+                </a>
+                <a class="nav-link" href="department.html">
+                    <i class="fas fa-building me-1"></i>部门分类
+                </a>
+                <a class="nav-link" href="question-analyzer.html">
+                    <i class="fas fa-search me-1"></i>问题分析
+                </a>
+                <a class="nav-link active" href="question-deduplication.html">
+                    <i class="fas fa-filter me-1"></i>智能去重
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 标题区域 -->
+        <div class="row mb-4">
+            <div class="col-12 text-center text-white">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-brain me-3"></i>智能问题去重分析
+                </h1>
+                <p class="lead">基于BERT语义模型的智能去重处理，支持精确匹配和语义相似度检测</p>
+            </div>
+        </div>
+
+        <!-- 功能介绍 -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-equals fa-3x text-primary mb-3"></i>
+                        <h5>精确去重</h5>
+                        <p class="text-muted">识别完全相同的问题表述</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                        <h5>语义去重</h5>
+                        <p class="text-muted">使用BERT模型识别意思相近的问题</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                        <h5>分层抽样</h5>
+                        <p class="text-muted">按部门进行智能分层抽样</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要功能区域 -->
+        <div class="row">
+            <!-- 问题去重 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-filter me-2"></i>问题去重处理
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="deduplicationForm">
+                            <div class="mb-3">
+                                <label class="form-label">全量数据文件</label>
+                                <div class="upload-area" onclick="document.getElementById('allDataFile').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                    <p>点击或拖拽上传Excel文件</p>
+                                    <small class="text-muted">支持 .xlsx, .xls 格式</small>
+                                </div>
+                                <input type="file" id="allDataFile" accept=".xlsx,.xls" style="display: none;">
+                                <div id="allDataFileName" class="mt-2 text-muted"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">已复核问题文件</label>
+                                <div class="upload-area" onclick="document.getElementById('checkedDataFile').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                    <p>点击或拖拽上传Excel文件</p>
+                                    <small class="text-muted">支持 .xlsx, .xls 格式</small>
+                                </div>
+                                <input type="file" id="checkedDataFile" accept=".xlsx,.xls" style="display: none;">
+                                <div id="checkedDataFileName" class="mt-2 text-muted"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">语义相似度阈值</label>
+                                <input type="range" class="form-range" id="thresholdSlider" min="0.5" max="0.95" step="0.05" value="0.7">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.5 (宽松)</small>
+                                    <strong id="thresholdValue">0.7</strong>
+                                    <small>0.95 (严格)</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-play me-2"></i>开始去重处理
+                            </button>
+                        </form>
+
+                        <div class="progress-container">
+                            <div class="progress mb-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                            </div>
+                            <div class="text-center">
+                                <small id="progressText">准备中...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分层抽样 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>分层抽样
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="samplingForm">
+                            <div class="mb-3">
+                                <label class="form-label">数据文件</label>
+                                <div class="upload-area" onclick="document.getElementById('samplingDataFile').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                    <p>点击或拖拽上传Excel文件</p>
+                                    <small class="text-muted">需包含"对应部门"列</small>
+                                </div>
+                                <input type="file" id="samplingDataFile" accept=".xlsx,.xls" style="display: none;">
+                                <div id="samplingDataFileName" class="mt-2 text-muted"></div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">总抽样数量</label>
+                                    <input type="number" class="form-control" id="sampleSize" value="1500" min="100" max="10000">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">小部门阈值</label>
+                                    <input type="number" class="form-control" id="smallDeptThreshold" value="50" min="10" max="200">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">部门列名</label>
+                                <input type="text" class="form-control" id="departmentColumn" value="对应部门" placeholder="对应部门">
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-chart-line me-2"></i>开始分层抽样
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果显示区域 -->
+        <div class="result-section">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>处理结果
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div id="resultContent">
+                        <!-- 结果内容将在这里显示 -->
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary" id="downloadBtn" style="display: none;">
+                            <i class="fas fa-download me-2"></i>下载处理结果
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // 阈值滑块更新
+        document.getElementById('thresholdSlider').addEventListener('input', function(e) {
+            document.getElementById('thresholdValue').textContent = e.target.value;
+        });
+
+        // 文件上传处理
+        function setupFileUpload(fileInputId, fileNameId) {
+            const fileInput = document.getElementById(fileInputId);
+            const fileName = document.getElementById(fileNameId);
+            
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    fileName.textContent = `已选择: ${e.target.files[0].name}`;
+                    fileName.className = 'mt-2 text-success';
+                }
+            });
+        }
+
+        setupFileUpload('allDataFile', 'allDataFileName');
+        setupFileUpload('checkedDataFile', 'checkedDataFileName');
+        setupFileUpload('samplingDataFile', 'samplingDataFileName');
+
+        // 模拟去重处理
+        document.getElementById('deduplicationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const allDataFile = document.getElementById('allDataFile').files[0];
+            const checkedDataFile = document.getElementById('checkedDataFile').files[0];
+            
+            if (!allDataFile || !checkedDataFile) {
+                alert('请选择两个Excel文件');
+                return;
+            }
+
+            const threshold = document.getElementById('thresholdSlider').value;
+            
+            // 显示进度
+            const progressContainer = document.querySelector('.progress-container');
+            const progressBar = document.querySelector('.progress-bar');
+            const progressText = document.getElementById('progressText');
+            
+            progressContainer.style.display = 'block';
+            
+            // 模拟处理过程
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    progressText.textContent = '正在读取文件...';
+                } else if (progress < 60) {
+                    progressText.textContent = '正在进行精确去重...';
+                } else if (progress < 90) {
+                    progressText.textContent = '正在进行语义分析...';
+                } else {
+                    progressText.textContent = '正在生成结果...';
+                }
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        showResult('去重处理', `处理完成！相似度阈值: ${threshold}`, {
+                            '总问题数': '2,847',
+                            '已复核问题': '1,203',
+                            '精确重复': '156',
+                            '语义相似': '89',
+                            '未复核问题': '1,399'
+                        });
+                        progressContainer.style.display = 'none';
+                    }, 500);
+                }
+            }, 200);
+        });
+
+        // 模拟分层抽样
+        document.getElementById('samplingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const dataFile = document.getElementById('samplingDataFile').files[0];
+            
+            if (!dataFile) {
+                alert('请选择Excel文件');
+                return;
+            }
+
+            const sampleSize = document.getElementById('sampleSize').value;
+            const threshold = document.getElementById('smallDeptThreshold').value;
+            
+            // 模拟处理
+            setTimeout(() => {
+                showResult('分层抽样', `抽样完成！目标样本数: ${sampleSize}`, {
+                    '总数据量': '5,672',
+                    '部门数量': '23',
+                    '小部门（全抽）': '8个部门，共234条',
+                    '大部门（按比例）': '15个部门，共1266条',
+                    '最终样本': sampleSize + '条'
+                });
+            }, 2000);
+        });
+
+        // 显示结果
+        function showResult(type, message, data) {
+            const resultSection = document.querySelector('.result-section');
+            const resultContent = document.getElementById('resultContent');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            let html = `
+                <div class="alert alert-success">
+                    <h5><i class="fas fa-check-circle me-2"></i>${message}</h5>
+                </div>
+                <div class="row">
+            `;
+            
+            for (const [key, value] of Object.entries(data)) {
+                html += `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">${key}</h6>
+                                <h4 class="text-primary">${value}</h4>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            resultContent.innerHTML = html;
+            resultSection.style.display = 'block';
+            downloadBtn.style.display = 'inline-block';
+            
+            // 滚动到结果区域
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 下载按钮
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            // 创建一个示例Excel下载
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet([
+                { '问题': '示例问题1', '对应部门': '客服部', '处理状态': '未复核' },
+                { '问题': '示例问题2', '对应部门': '技术部', '处理状态': '未复核' }
+            ]);
+            XLSX.utils.book_append_sheet(wb, ws, "处理结果");
+            XLSX.writeFile(wb, `处理结果_${new Date().getTime()}.xlsx`);
+        });
+
+        // 拖拽上传功能
+        document.querySelectorAll('.upload-area').forEach(area => {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                area.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                area.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                area.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                area.style.borderColor = '#667eea';
+                area.style.background = '#f0f4ff';
+            }
+
+            function unhighlight(e) {
+                area.style.borderColor = '#dee2e6';
+                area.style.background = '#f8f9fa';
+            }
+
+            area.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                // 找到对应的input元素
+                const input = area.parentElement.querySelector('input[type="file"]');
+                if (input && files.length > 0) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
