@@ -796,7 +796,7 @@
                     
                     // 2. 关键词匹配
                     for (const [dept, keywords] of Object.entries(keywordsDict)) {
-                        if (keywords.some(kw => question.includes(kw))) {
+                        if (keywords.some(kw => String(question).includes(kw))) {
                             keywordDept = dept;
                             keywordHit = true;
                             break;
